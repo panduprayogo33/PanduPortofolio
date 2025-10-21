@@ -56,6 +56,7 @@ and here's my [Linkedin profile](https://www.linkedin.com/in/pandu-prayogo33/)
    - [ClickUp](https://clickup.com/)
 
 ### Courses & Certificate
+* [Microsoft Fundamental Database (2015)](https://drive.google.com/file/d/16yug_P24I0A8V_OEAKg0wio-lc_Qp8eM/view?usp=drivesdk)
 * Microfocus - SilkTest Automation Testing (2019)
 * [Katalon Academy - Leveling Up from Manual to Automation Tester (2025)](https://drive.google.com/file/d/1867sErAHLX2ThBF9Amo3YsaG-i9d2BNb/view?usp=sharing)
 
