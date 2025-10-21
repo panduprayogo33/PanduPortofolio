@@ -1,0 +1,296 @@
+package dnaPaydi
+
+import static com.kms.katalon.core.checkpoint.CheckpointFactory.findCheckpoint
+import static com.kms.katalon.core.testcase.TestCaseFactory.findTestCase
+import static com.kms.katalon.core.testdata.TestDataFactory.findTestData
+import static com.kms.katalon.core.testobject.ObjectRepository.findTestObject
+import java.util.concurrent.locks.Condition
+import org.eclipse.persistence.internal.oxm.record.json.JSONParser.pair_return as pair_return
+import com.kms.katalon.core.annotation.Keyword
+import com.kms.katalon.core.checkpoint.Checkpoint
+import com.kms.katalon.core.cucumber.keyword.CucumberBuiltinKeywords as CucumberKW
+import com.kms.katalon.core.mobile.keyword.MobileBuiltInKeywords as Mobile
+import com.kms.katalon.core.model.FailureHandling
+import com.kms.katalon.core.testcase.TestCase
+import com.kms.katalon.core.testdata.TestData
+import com.kms.katalon.core.testobject.ConditionType
+import com.kms.katalon.core.testobject.TestObject
+import com.kms.katalon.core.webservice.keyword.WSBuiltInKeywords as WS
+import com.kms.katalon.core.webui.keyword.WebUiBuiltInKeywords as WebUI
+import internal.GlobalVariable
+import com.kms.katalon.core.webui.driver.DriverFactory as DriverFactory
+import org.openqa.selenium.WebDriver as WebDriver
+import org.openqa.selenium.WebElement as WebElement
+import org.openqa.selenium.Keys as Keys
+import org.openqa.selenium.By as By
+import io.appium.java_client.AppiumDriver as AppiumDriver
+import com.kms.katalon.core.mobile.keyword.internal.MobileDriverFactory as MobileDriverFactory
+import com.kms.katalon.core.mobile.helper.MobileElementCommonHelper as MobileElementCommonHelper
+import com.kms.katalon.core.util.KeywordUtil as KeywordUtil
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCell
+import org.apache.poi.xssf.usermodel.XSSFCellStyle
+import org.apache.poi.xssf.usermodel.XSSFRow
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+
+Date sekarang = new Date()
+String tgl = ''
+String jam = ''
+GlobalVariable.fullFlow = true
+GlobalVariable.strGlbStatus = ''
+GlobalVariable.strGlbKeterangan = ''
+GlobalVariable.strGlbPopUp = false
+GlobalVariable.strGlbAlamat = false
+GlobalVariable.strGlbNomor = 1
+GlobalVariable.strGlbMenu = 'Leads'
+String strGlbMenu = GlobalVariable.strGlbMenu
+Boolean runValidasiPertama = true
+GlobalVariable.strGlbCompare = false
+
+for (int excelRow : (1..getLastRow)) { //untuk running semua data
+	
+//	mulai timer
+	sekarang = new Date()
+	runTime.reset()
+	runTime.start()
+	tgl = sekarang.format('yyyy-MM-dd')
+	jam = sekarang.format('HH:mm')
+	GlobalVariable.strGlbDate = tgl
+	GlobalVariable.strGlbTime = jam
+	GlobalVariable.strGlbNumImage = 0
+	GlobalVariable.strGlbStatus = ''
+	GlobalVariable.strGlbKeterangan = ''
+	GlobalVariable.strGlbPopUp = ''
+	GlobalVariable.strGlbCaptureFolder = 'C:\\Datatable\\Capture\\' + GlobalVariable.strGlbMenu + '\\' + GlobalVariable.strGlbDate + '\\'
+	
+//=============================================LEADS=============================================
+	CustomKeywords.'dnaPaydi.CreateProposal.Leads'(strNo, excelRow)
+}
+
+public class CreateProposal {
+
+	//===============================================================================LEADS===============================================================================
+	@Keyword
+	def static Leads(String strNo, int excelRow) {
+		String strGlbFolder
+		String strGlbMenu = GlobalVariable.strGlbMenu
+		Boolean strGlbFull = GlobalVariable.strGlbFull
+		Boolean strGlbCompare = GlobalVariable.strGlbCompare
+		Boolean strGlbMedis = GlobalVariable.strGlbMedis
+		TestData dataLeads
+		if (strGlbMenu == 'Leads' | strGlbMenu == 'FNA' | strGlbMenu == 'Proposal'){
+			strGlbFolder = 'Proposal'
+			if (strGlbMenu == 'FNA'){
+				strGlbMenu = 'FNA Leads'
+			}
+		} else {
+			strGlbFolder = strGlbMenu
+			if(strGlbCompare == true){
+				strGlbMenu = 'ComLeads'
+			} else if (strGlbMedis == true){
+				strGlbMenu = 'MedLeads'
+			} else if (strGlbFull == true){
+				strGlbMenu = 'FullLeads'
+			} else {
+				strGlbMenu = 'Leads'
+			}
+		}
+
+		dataLeads = findTestData(strGlbFolder + "/" + strGlbMenu)
+		String strNama			= dataLeads.getValue('NAMA', excelRow)
+		String strTanggal		= dataLeads.getValue('UMUR', excelRow)
+		String strKelamin		= dataLeads.getValue('JENIS KELAMIN', excelRow)
+		String strEmail			= dataLeads.getValue('EMAIL', excelRow)
+		String strNoHandphone	= dataLeads.getValue('NO HANDPHONE', excelRow)
+		String strStatus		= dataLeads.getValue('STATUS PERKAWINAN', excelRow)
+		String strTertanggung	= dataLeads.getValue('TERTANGGUNG', excelRow)
+		String strAlamat		= dataLeads.getValue('ALAMAT', excelRow)
+		String strAlamat2		= dataLeads.getValue('ALAMAT II', excelRow)
+		String strProvinsi		= dataLeads.getValue('PROVINSI', excelRow)
+		String strKota			= dataLeads.getValue('KOTA', excelRow)
+		String strKecamatan		= dataLeads.getValue('KECAMATAN', excelRow)
+		String strKelurahan		= dataLeads.getValue('KELURAHAN', excelRow)
+		String strKodePos		= dataLeads.getValue('KODE POS', excelRow)
+		String strKeterangan 	= ''
+
+		//klik tombol Leads bawah
+		Thread.sleep(1000)
+		Mobile.tap(findTestObject('Object Repository/NonProduct/btnBawahLeads'), 0, FailureHandling.OPTIONAL)
+
+		//klik tambah leads
+		Thread.sleep(1000)
+		Mobile.tap(findTestObject('Object Repository/Leads/btnTambahLeads'), 0)
+
+		//input nama
+		Thread.sleep(1000)
+		if (strNama != '') {
+			Mobile.sendKeys(findTestObject('Object Repository/Leads/txtNama'), strNama)
+		} else {
+			strKeterangan = 'Nama'
+			CreateProposal.callKeteranganLeads(strKeterangan)
+		}
+
+		//input tanggal
+		if (strTanggal != '') {
+			Mobile.tap(findTestObject('Object Repository/Leads/btnTanggalLahir'), 0)
+			KeywordPaydi.GetOldTanggal(strTanggal)
+		} else {
+			strKeterangan = 'Tanggal Lahir'
+			CreateProposal.callKeteranganLeads(strKeterangan)
+		}
+
+		//pilih jenis kelamin
+		if (strKelamin != '') {
+			Mobile.tap(findTestObject('Object Repository/Leads/spnJenisKelamin'), 0)
+			TestObject teksKlm = new TestObject('newObjectKlm')
+			teksKlm.addProperty('text', ConditionType.EQUALS, strKelamin)
+			Mobile.tap(teksKlm, 1)
+		} else {
+			strKeterangan = 'Jenis Kelamin'
+			CreateProposal.callKeteranganLeads(strKeterangan)
+		}
+
+		//input email
+		if (strEmail != '') {
+			Mobile.sendKeys(findTestObject('Object Repository/Leads/txtEmail'), strEmail, FailureHandling.CONTINUE_ON_FAILURE)
+		}
+
+		//input no handphone
+		if (strNoHandphone != '') {
+			Mobile.sendKeys(findTestObject('Object Repository/Leads/txtNoHandphone'), strNoHandphone, FailureHandling.CONTINUE_ON_FAILURE)
+		}
+
+		//pilih status perkawinan
+		if (strStatus != '') {
+			Mobile.tap(findTestObject('Object Repository/Leads/spnStatusPerkawinan'), 0)
+			TestObject teksStat = new TestObject('newObjectStat')
+			teksStat.addProperty('text', ConditionType.EQUALS, strStatus)
+			Mobile.tap(teksStat, 1)
+		} else {
+			strKeterangan = 'Status Perkawinan'
+			CreateProposal.callKeteranganLeads(strKeterangan)
+		}
+
+		//input jumlah tertanggung
+		if (strTertanggung != ''){
+			Mobile.setText(findTestObject('Object Repository/Leads/txtJumlahTertanggung'), strTertanggung, 0)
+		}
+
+		//input alamat
+		if (strAlamat != '') {
+			Mobile.sendKeys(findTestObject('Object Repository/Leads/txtAlamat1'), strAlamat)
+		}
+
+		if (strAlamat2 != '') {
+			Mobile.sendKeys(findTestObject('Object Repository/Leads/txtAlamat2'), strAlamat2)
+		}
+
+		//pilih provinsi
+		if (strProvinsi != '') {
+			strProvinsi = strProvinsi.toUpperCase()
+			Mobile.tap(findTestObject('Object Repository/Leads/spnProvinsi'), 0)
+			TestObject teksProv = new TestObject('newObjectProv')
+			teksProv.addProperty('text', ConditionType.EQUALS, strProvinsi)
+			Mobile.tap(teksProv, 1)
+
+			//pilih kota
+			if (strKota != '') {
+				strKota = strKota.toUpperCase()
+				Mobile.tap(findTestObject('Object Repository/Leads/spnKota'), 0)
+				TestObject teksKota = new TestObject('newObjectKota')
+				teksKota.addProperty('text', ConditionType.EQUALS, strKota)
+				Mobile.tap(teksKota, 1)
+
+				//pilih kecamatan
+				if (strKecamatan != '') {
+					strKecamatan = strKecamatan.toUpperCase()
+					Mobile.tap(findTestObject('Object Repository/Leads/spnKecamatan'), 0)
+					TestObject teksCamat = new TestObject('newObjectCamat')
+					teksCamat.addProperty('text', ConditionType.EQUALS, strKecamatan)
+					Mobile.tap(teksCamat, 1)
+
+					//pilih kelurahan
+					if (strKelurahan != '') {
+						strKelurahan = strKelurahan.toUpperCase()
+						Mobile.tap(findTestObject('Object Repository/Leads/spnKelurahan'), 0)
+						TestObject teksLurah = new TestObject('newObjectLurah')
+						teksLurah.addProperty('text', ConditionType.EQUALS, strKelurahan)
+						Mobile.tap(teksLurah, 1)
+					} else {
+						strKeterangan = 'Kelurahan'
+						CreateProposal.callKeteranganLeads(strKeterangan)
+					}
+
+					//					//kode pos terisi sendiri
+					//					GlobalVariable.strGlbRandom1 = Mobile.getText(findTestObject('Object Repository/Leads/txtKodePos'), 1, FailureHandling.OPTIONAL)
+				}
+			}
+		}
+
+		//screenshot
+		KeywordPaydi.CaptureScreen(strNo)
+
+		Mobile.swipe(1000, 800, 1000, 400)
+		Mobile.tap(findTestObject('Object Repository/NonProduct/btnSimpan'), 0)
+
+		//nunggu loading
+		Boolean cekSimpan = true
+		while (cekSimpan == true) {
+			cekSimpan  = Mobile.verifyElementExist(findTestObject('Object Repository/NonProduct/objLoading'), 1, FailureHandling.OPTIONAL)
+
+			if (cekSimpan == true) {
+				Thread.sleep(1000)
+			}
+		}
+
+		cekSimpan  = Mobile.verifyElementExist(findTestObject('Object Repository/Leads/btnTambahLeads'), 1, FailureHandling.OPTIONAL)
+		if (cekSimpan == true) {
+			GlobalVariable.strGlbRandom1 = strNama
+		} else {
+			GlobalVariable.strGlbStatus = 'FAILED'
+			GlobalVariable.strGlbKeterangan == 'Gagal membuat Leads'
+			GlobalVariable.strGlbRandom1 = ''
+		}
+	}
+
+	@Keyword
+	def static callKeteranganLeads(String keterangan) {
+		String liatTeks = new String()
+
+		if (GlobalVariable.strGlbKeterangan == '') {
+			if (keterangan == 'Field Tanggal Lahir invalid') {
+				GlobalVariable.strGlbKeterangan = keterangan
+				liatTeks = GlobalVariable.strGlbKeterangan
+			} else {
+				GlobalVariable.strGlbKeterangan = 'Field ' + keterangan + ' kosong'
+				liatTeks = GlobalVariable.strGlbKeterangan
+			}
+		} else {
+			if (keterangan == 'Field Tanggal Lahir invalid') {
+				GlobalVariable.strGlbKeterangan = keterangan + '. ' + GlobalVariable.strGlbKeterangan
+				liatTeks = GlobalVariable.strGlbKeterangan
+			} else {
+				if (GlobalVariable.strGlbKeterangan == 'Field Tanggal Lahir invalid. ') {
+					GlobalVariable.strGlbKeterangan = GlobalVariable.strGlbKeterangan + 'Field ' + keterangan + ' kosong'
+					liatTeks = GlobalVariable.strGlbKeterangan
+				} else if (GlobalVariable.strGlbKeterangan == 'Field Tanggal Lahir invalid') {
+					GlobalVariable.strGlbKeterangan = GlobalVariable.strGlbKeterangan + '. ' + 'Field ' + keterangan + ' kosong'
+					liatTeks = GlobalVariable.strGlbKeterangan
+				} else {
+					String glbVari = GlobalVariable.strGlbKeterangan
+					String glbTesk = glbVari.replace(' kosong','')
+					String glbTeks = glbTesk.replace('dan ','')
+					GlobalVariable.strGlbKeterangan = glbTeks + ', ' + 'dan ' + keterangan + ' kosong'
+					liatTeks = GlobalVariable.strGlbKeterangan
+				}
+			}
+		}
+	}
+}
