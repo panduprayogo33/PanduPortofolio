@@ -57,24 +57,13 @@ and here's my [Linkedin profile](https://www.linkedin.com/in/pandu-prayogo33/)
 
 ### Courses & Certificate
 * Microfocus - SilkTest Automation Testing (2019)
-* Katalon Academy - Leveling Up from Manual to Automation Tester (2025)
+* [Katalon Academy - Leveling Up from Manual to Automation Tester (2025)](https://drive.google.com/file/d/1867sErAHLX2ThBF9Amo3YsaG-i9d2BNb/view?usp=sharing)
 
 ### Sample
-* Test Case
-    -
-    -
-  
-* Test Data
-    -
-    -
-
+* [Test Case](https://docs.google.com/spreadsheets/d/1AIu4ziCANl4wWPFIDj4aYVP4teoVt1_1/edit?usp=sharing&ouid=108618952778889400809&rtpof=true&sd=true)
+* [Test Data](https://docs.google.com/spreadsheets/d/1ZE1H2Ah8a7K_gi2NKF8RMKGNAmJzWYTK/edit?usp=sharing&ouid=108618952778889400809&rtpof=true&sd=true)
 * Automation Script
-    - [UFT Script](https://drive.google.com/file/d/1bZMgv_V8GXBPhQrFGf_D4mBkxsvBuPZ2/view?usp=drive_link)
-    - [SilkTest Script](https://drive.google.com/file/d/1twqMOmZrwmTkQ4YbORKdufIm5yn13qzm/view?usp=drive_link)
-    - [Katalon Script](https://drive.google.com/file/d/1MS6qaOWLyvGnLHofz8-nIxwNZ3xckGWK/view?usp=drive_link)
-
-* Bug Report
-    -
-
-* Test Report
-    -
+    - [UFT Script](https://github.com/panduprayogo33/PanduPortofolio/blob/main/Sample/UFT%20Script.txt)
+    - [SilkTest Script](https://github.com/panduprayogo33/PanduPortofolio/blob/main/Sample/Silktest%20Script.txt)
+    - [Katalon Script](https://github.com/panduprayogo33/PanduPortofolio/blob/main/Sample/Katalon%20Script.txt)
+* [Bug Report](https://docs.google.com/spreadsheets/d/143ak09PVG64nvGE_7iTw57vrNSC5eELj6hQV3nOuf8o/edit?usp=sharing)
