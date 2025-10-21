@@ -62,7 +62,7 @@ and here's my [Linkedin profile](https://www.linkedin.com/in/pandu-prayogo33/)
 ### Sample
 * [Test Case](https://docs.google.com/spreadsheets/d/1AIu4ziCANl4wWPFIDj4aYVP4teoVt1_1/edit?usp=sharing&ouid=108618952778889400809&rtpof=true&sd=true)
 * [Test Data](https://docs.google.com/spreadsheets/d/1ZE1H2Ah8a7K_gi2NKF8RMKGNAmJzWYTK/edit?usp=sharing&ouid=108618952778889400809&rtpof=true&sd=true)
-* Automation Script
+* [Automation Script](https://drive.google.com/drive/folders/1ZKh-NhS_KtLkK4xX5ooj-p0a8yW1e_-L?usp=sharing)
     - [UFT Script](https://github.com/panduprayogo33/PanduPortofolio/blob/main/Sample/UFT%20Script.txt)
     - [SilkTest Script](https://github.com/panduprayogo33/PanduPortofolio/blob/main/Sample/Silktest%20Script.txt)
     - [Katalon Script](https://github.com/panduprayogo33/PanduPortofolio/blob/main/Sample/Katalon%20Script.txt)
