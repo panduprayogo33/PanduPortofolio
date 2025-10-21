@@ -1,0 +1,1277 @@
+Imports System
+Imports System.Diagnostics
+Imports System.Text.RegularExpressions
+Imports System.Windows.Forms
+Imports WindowsInput
+Imports SilkTest.Ntf.Mobile
+Imports SilkTest.Ntf.XBrowser
+Imports SilkTest.Ntf.Win32
+Imports SilkTest.Ntf.Dialog
+
+Public Module Main
+	Dim _desktop As Desktop = Agent.Desktop
+	Dim strGlbCaptureFolder, strGlbFileName, strGlbTitle, strGlbDari, strGlbKe, strGlbNamaRekening, strGlbAdmin, strGlbRef, strGlbJumlah, strGlbBill1, strGlbBill2, strGlbTagihan, strGlbStatus, strGlbTglJam, strGlbSaldoIdsAfter, strGlbFlagTlf As String
+	Dim strGlbFreeText1, strGlbFreeText2, strGlbFreeText3, strGlbFreeText4, strGlbFreeText5, strGlbFreeText6, strGlbFreeText7, strGlbFreeText8, strGlbFreeText9 As String
+	Dim intGlbNumImage, intFlag, intProses, intLampu, intTimeout, intGlbFlagBDSI, strGlbXBdsi, strGlbYBdsi As Integer
+	Dim strGlbDurationStart, strGlbDurationEnd, strGlbDuration, strGlbDurationStartAll, strGlbDurationEndAll, strGlbDurationAll
+	Dim Day, strStatus, strKeterangan, strResult, strGlbStatusMbca, strGlbStatusCrm, strGlbStatusBds, strGlbStatusTlf As String
+	Dim Tinggi, Lebar, TinggiMon, LebarMon As String
+
+	Public Sub Main()
+		
+		Dim objImage As Object
+		
+	'buat get height dan width desktop
+'		objImage = CreateObject("WIA.ImageFile")
+'		_desktop.CaptureBitmap("C:\Screens\Monitor.png")
+'		objImage.LoadFile("C:\Screens\Monitor.png")
+'		TinggiMon = objImage.Width
+'		LebarMon = objImage.Width
+'		System.IO.File.Delete("C:\Screens\Monitor.png")
+	
+		Tinggi = _desktop.MobileDevice("MBCA_Regresi_Android").DisplayHeight '2452
+		Lebar = _desktop.MobileDevice("MBCA_Regresi_Android").DisplayWidth '1600
+		
+		strGlbDurationStartAll = DateTime.Now.TimeOfDay
+		
+		Dim row As ActiveDataRow
+		Dim intJumLoop, intLoop, intJumMain, intMenuRun As Integer
+		Dim strExecutionID, strFlagSql, intStartData, intEndData, intSequence As String		
+		Dim intStartDataFor, intEndDataFor As Integer
+		Dim strDevice, strKodeAkses, strTargetBDSI, strUserIdBDSI, strPassBDSI, strUserTlf, strPassTlf, strPin, strCardNumber, strNoHp As String
+		Dim strNo, strJenisTransfer, strDariRekening, strJumlah, strDaftarTransfer, strJenisVA, strNoVirtual, strSimpanDaftar, strBerita, strProduct, strExpected As String
+		Dim arrStartData, arrEndData As Array
+		Dim arrDevice, arrKodeAkses, arrTargetBDSI, arrUserIdBDSI, arrPassBDSI, arrUserTlf, arrPassTlf, arrPin, arrCardNumber, arrNoHp As Array
+		Dim arrNo, arrJenisTransfer, arrDariRekening, arrJumlah, arrDaftarTransfer, arrJenisVA, arrNoVirtual, arrSimpanDaftar, arrBerita, arrProduct, arrExpected As Array
+		Dim strMenu, strBobotMbca, strBobotCRM, strBobotBdsi, strBobotTLF
+		Dim arrMenu, arrBobotMbca, arrBobotCRM, arrBobotBdsi, arrBobotTLF
+		Dim strNoMain, strExecute, strMenuMain, strRunMenu As String
+		Dim arrNoMain, arrExecute, arrMenuMain As Array
+		Dim strMenuRun, strRunMbca, strRunCrm, strRunBds, strRunTlf As String
+		Dim arrMenuRun, arrRunMbca, arrRunCrm, arrRunBds, arrRunTlf As Array
+		
+		Using shtMain As ActiveData = WorkBench.LoadActiveData("ALL_REGRESI_MBCA", "MAIN MBCA")
+			For Each row In shtMain 	
+				strNoMain =  strNoMain &","& row.GetString("NO")
+				strExecute = strExecute &","& row.GetString("EXECUTE")
+				strMenuMain = strMenuMain &","& row.GetString("MENU")
+			Next
+		End Using
+		
+	'Sheet Main
+		arrNoMain =  Split(strNoMain, ",")
+		arrExecute = Split(strExecute, ",")
+		arrMenuMain = Split(strMenuMain, ",")
+		intJumMain = UBound(arrNoMain)
+
+		For intLoopMain = 1 To intJumMain Step 1
+			strRunMenu = "Transfer Virtual Account"
+			If arrExecute(intLoopMain) <> "YES" And arrMenuMain(intLoopMain) = strRunMenu Then
+				Exit Sub
+			End If
+		Next
+		
+		Using shtRunning As ActiveData = WorkBench.LoadActiveData("ALL_REGRESI_MBCA", "RUNNING")
+			For Each row In shtRunning 	
+				strMenuRun = strMenuRun &","& row.GetString("MENU RUN")
+				strRunMbca = strRunMbca &","& row.GetString("RUN MBCA")
+				strRunCrm = strRunCrm &","& row.GetString("RUN CRM")
+				strRunBds = strRunBds &","& row.GetString("RUN BDS IDS")
+				strRunTlf = strRunTlf &","& row.GetString("RUN BASE 24")
+			Next
+		End Using
+		
+		'Sheet Running
+		arrMenuRun = Split(strMenuRun, ",")
+		arrRunMbca = Split(strRunMbca, ",")
+		arrRunCrm = Split(strRunCrm, ",")
+		arrRunBds = Split(strRunBds, ",")
+		arrRunTlf = Split(strRunTlf, ",")
+		intMenuRun = UBound(arrMenuRun)
+		
+		For intLoopRun = 1 To intMenuRun Step 1
+			If arrMenuRun(intLoopRun) = strRunMenu Then
+				strRunMbca = arrRunMbca(intLoopRun)
+				strRunCrm = arrRunCrm(intLoopRun)
+				strRunBds = arrRunBds(intLoopRun)
+				strRunTlf = arrRunTlf(intLoopRun)
+			End If
+		Next
+		
+	'Get Sheet Login
+		Using shtLogin As ActiveData = Workbench.LoadActiveData("ALL_REGRESI_MBCA", "LOGIN")
+			strDevice = ""
+			strKodeAkses = ""
+			strTargetBDSI = ""
+			strUserIdBDSI = ""
+			strPassBDSI = ""
+			strUserTlf = ""
+			strPassTlf = ""
+			strPin = ""
+			strCardNumber = ""
+			strNoHp = ""
+			
+			For Each row In shtLogin
+				strDevice = strDevice &","& row.GetString("DEVICE")		
+				strKodeAkses = strKodeAkses &","& row.GetString("KODE AKSES")
+				strTargetBDSI = strTargetBDSI &","& row.GetString("TARGET")
+				strUserIdBDSI = strUserIdBDSI &","& row.GetString("USER ID")
+				strPassBDSI = strPassBDSI &","& row.GetString("PASSWORD")
+				strUserTlf = strUserTlf &","& row.GetString("USERNAME")
+				strPassTlf = strPassTlf &","& row.GetString("PASSWORD TLF")
+				strPin = strPin &","& row.GetString("PIN")
+				strNoHp = strNoHp &","& row.GetString("NO HP")
+				strCardNumber = strCardNumber &","& row.GetString("CARD NUMBER")
+			Next
+			
+		End Using
+		
+		'Get Sheet Transfer VA
+		Using shtAllTransfer As ActiveData = WorkBench.LoadActiveData("ALL_REGRESI_MBCA", "ALL TRANSFER")
+		
+			strNo = ""
+			strJenisTransfer = ""
+			strDariRekening = ""
+			strJumlah = ""
+			strDaftarTransfer = ""
+			strJenisVA = ""
+			strNoVirtual = ""
+			strSimpanDaftar = ""
+			strBerita = ""
+			strProduct = ""
+			strExpected = ""
+
+			For Each row In shtAllTransfer	
+				strNo = strNo &","& row.GetString("NO")
+				strJenisTransfer = strJenisTransfer &","& row.GetString("JENIS TRANSFER")
+				strDariRekening = strDariRekening &","& row.GetString("DARI REKENING")
+				strJumlah = strJumlah &","& row.GetString("JUMLAH")
+				strDaftarTransfer = strDaftarTransfer &","& row.GetString("PILIH LIST TRANSFER")
+				strJenisVA = strJenisVA &","& row.GetString("JENIS VIRTUAL ACCOUNT")
+				strNoVirtual = strNoVirtual &","& row.GetString("NO VIRTUAL ACCOUNT")
+				strSimpanDaftar = strSimpanDaftar &","& row.GetString("SIMPAN KE DAFTAR TRANSFER")
+				strBerita = strBerita &","& row.GetString("BERITA")
+				strProduct = strProduct &","& row.GetString("PRODUCT NAME")
+				strExpected = strExpected &","& row.GetString("EXPECTED VALUE")
+			Next
+		End Using
+		
+		Using shtData As ActiveData = WorkBench.LoadActiveData("ALL_REGRESI_MBCA", "DATA")
+			intStartData = ""
+			intEndData = ""
+			For Each row In shtData 	
+				intStartData =  intStartData &","& row.GetString("START DATA")
+				intEndData =  intEndData &","& row.GetString("END DATA")
+			Next
+		End Using
+		
+		Using shtBobot As ActiveData = WorkBench.LoadActiveData("ALL_REGRESI_MBCA", "BOBOT")
+			For Each row In shtBobot 	
+				strMenu =  strMenu &","& row.GetString("MENU")
+				strBobotMbca =  Replace(strBobotMbca, "%", "") &","& row.GetString("BOBOT MBCA")
+				strBobotCRM =  Replace(strBobotCRM, "%", "") &","& row.GetString("BOBOT CRM")
+				strBobotBdsi = Replace(strBobotBdsi, "%", "") &","& row.GetString("BOBOT BDS IDS")
+				strBobotTLF = Replace(strBobotTLF, "%", "") &","& row.GetString("BOBOT BASE 24")
+			Next
+		End Using
+		
+		'Sheet Login
+		arrDevice =  Split(strDevice, ",")
+		arrKodeAkses = Split(strKodeAkses, ",")
+		arrPin = Split(strPin, ",")
+		arrTargetBDSI =  Split(strTargetBDSI, ",")
+		arrUserIdBDSI =  Split(strUserIdBDSI, ",")
+		arrPassBDSI =  Split(strPassBDSI, ",")
+		arrUserTlf = Split(strUserTlf, ",")
+		arrPassTlf = Split(strPassTlf, ",")
+		arrCardNumber = Split(strCardNumber, ",")
+		arrNoHp = Split(strNoHp, ",")
+		
+		'Sheet Transfer VA
+		arrNo = Split(strNo, ",")
+		arrJenisTransfer = Split(strJenisTransfer, ",")
+		arrDariRekening = Split(strDariRekening, ",")
+		arrJumlah = Split(strJumlah, ",")
+		arrDaftarTransfer = Split(strDaftarTransfer, ",")
+		arrJenisVA = Split(strJenisVA, ",")
+		arrNoVirtual = Split(strNoVirtual, ",")
+		arrSimpanDaftar = Split(strSimpanDaftar, ",")
+		arrBerita = Split(strBerita, ",")
+		arrProduct = Split(strProduct, ",")
+		arrExpected = Split(strExpected, ",")
+						
+		'Sheet Data
+		arrStartData =  Split(intStartData, ",")
+		arrEndData = Split(intEndData, ",")
+		
+		'Sheet Bobot
+		arrMenu =  Split(strMenu, ",")
+		arrBobotMbca =  Split(strBobotMbca, ",")
+		arrBobotCRM =  Split(strBobotCRM, ",")
+		arrBobotBdsi =  Split(strBobotBdsi, ",")
+		arrBobotTLF =  Split(strBobotTLF, ",")
+		
+		Dim CekDevice = ""
+		If arrDevice(1) = "adb:Samsung Tab S4" Then
+			CekDevice = "Tab"
+		ElseIf arrDevice(1) = "adb:Redmi Note 3" Then
+			CekDevice = "Redmi"
+		End If
+					
+		Day = DateTime.Now.ToString ("yyyy-MM-dd")
+		strGlbCaptureFolder = "C:\Screens\MBCA\m-Transfer\BCA_VIRTUAL_ACCOUNT\" & Day & "\" & CekDevice & "\"
+		intJumLoop = UBound(arrNo)
+'		Day = GetDateTime()
+				
+		strGlbFlagTlf = True
+
+		If Trim(arrStartData(UBound(arrStartData))) = "" Then
+			intStartDataFor = 1
+		Else
+			intStartDataFor = CInt(arrStartData(1))
+		End If
+
+		If Trim(arrEndData(UBound(arrEndData))) = "" Then
+			intEndDataFor = intJumLoop
+		Else
+			intEndDataFor = CInt(arrEndData(1))
+		End If
+
+		'Insert Sql
+		'strExecutionID = InsertAuditHeader("Regresi MBCA - Transfer Virtual Account","ALL REGRESI.xlsx", intJumLoop,intStartDataFor,intEndDataFor)
+		'End Insert Sql
+
+		For intLoop = intStartDataFor To intEndDataFor Step 1
+		'For intLoop = 1 To 1 Step 1
+			'Insert Sql
+			'intSequence = InsertAuditDetail(strExecutionID, intLoop)
+			'End Insert Sql
+			intLampu = 0
+			intProses = 0
+			intTimeout = 0
+			strGlbTitle = ""
+			strGlbDari = ""
+			strGlbKe = ""
+			strGlbJumlah = ""
+			strGlbAdmin = ""
+			strGlbRef = ""
+			strGlbTglJam = ""
+			strGlbBill1 = ""
+			strGlbBill2 = ""
+			strGlbTagihan = ""
+			strGlbStatus = ""
+'			strGlbFreeText1 = ""
+'			strGlbFreeText2 = ""
+'			strGlbFreeText3 = ""
+'			strGlbFreeText4 = ""
+'			strGlbFreeText5 = ""
+'			strGlbFreeText6 = ""
+'			strGlbFreeText7 = ""
+'			strGlbFreeText8 = ""
+'			strGlbFreeText9 = ""
+			strGlbXBdsi = 0
+			strGlbYBdsi = 0
+			intGlbNumImage = 0
+			strStatus = "PASSED"
+			strKeterangan = ""
+			strResult = ""
+			strGlbStatusMbca = "PASSED"
+			strGlbStatusCrm = ""
+			strGlbStatusBds = ""
+			strGlbStatusTlf = ""
+															
+			If arrJenisTransfer(intLoop) = "Transfer Virtual Account" Then
+				
+				Call TRANSFER_VA(arrNo(intLoop), arrKodeAkses(1), arrPin(1), arrNoHp(1), arrJenisTransfer(intLoop), arrDariRekening(intLoop), arrJenisVA(intLoop), arrJumlah(intLoop), arrDaftarTransfer(intLoop), _
+						arrNoVirtual(intLoop), arrSimpanDaftar(intLoop), arrBerita(intLoop), arrExpected(intLoop), arrProduct(intLoop))
+						
+			End If
+		Next
+			
+	End Sub
+	
+	
+'	TRANSAKSI VA
+	#Region "Transfer VA"
+	Private Sub TRANSFER_VA(No As String, KodeAkses As String, Pin As String, NoHp As String, JenisTransfer As String, DariRekening As String, JenisVA As String, Jumlah As String, _
+							DaftarTransfer As String, NoVirtual As String, SimpanDaftar As String, Berita As String, Expected As String, Product As String)
+							
+		Dim verifTagihan As String
+		Dim arrverifTagihan As Array
+					
+		If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileButton[@resource-id='com.bca:id/main_btn_bca']") Then
+			Call LOGIN_MBCA(No, KodeAkses)
+		End If
+			
+		With _desktop.MobileDevice("MBCA_Regresi_Android")
+			
+			strGlbTitle = _desktop.MobileDevice("MBCA_Regresi_Android").MobileObject("m-Transfer").Text & ":"
+			
+			Call CAPTURE_SCREEN(No)
+			
+			.MobileButton("btnTransfer").Click()
+
+			Call CAPTURE_SCREEN(No)
+			
+			intLampu = 0
+			Do
+				If intLampu = 3 Then
+					strStatus = "FAILED"
+					strGlbStatusMbca = strStatus
+					strGlbStatusMbca = strStatus
+					If strKeterangan <> "" Then
+						strKeterangan = strKeterangan & ";Lampu indikator tidak hijau"
+					Else
+						strKeterangan = "Lampu indikator tidak hijau"
+					End If
+					.MobileObject("//MobileObject[@resource-id='com.bca:id/tabs_home_btn']").Click()
+					Exit Sub
+				End If
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@content-desc='Green_Indicator']") Then
+					Threading.Thread.Sleep(2000)
+					.MobileObject("BCA Virtual Account").Click()
+				Else
+					Call CEK_LAMPU(No, KodeAkses)
+					.MobileObject("BCA Virtual Account").Click()
+				End If
+				Threading.Thread.Sleep(1000)
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='Transaksi dapat*']") Then
+					If intLampu = 2 Then
+						Call CAPTURE_SCREEN(No)
+					End If
+					.MobileButton("btnMBCA").Click()
+					intLampu = intLampu + 1
+				End If
+				
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']") Then
+					Do
+						Threading.Thread.Sleep(100)
+					Loop While _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']")
+				ElseIf _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/progressBar1']") Then
+					Do
+						Threading.Thread.Sleep(100)
+					Loop While _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/progressBar1']")
+				End If
+				
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='Koneksi internet*']") Then
+					If intLampu = 2 Then
+						Call CAPTURE_SCREEN(No)
+					End If
+					.PressBack
+					intLampu = intLampu + 1
+				End If
+			Loop Until _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']") Or _desktop.MobileDevice("MBCA_Regresi_Android").Exists("tv_va_to_account_label") Or _desktop.MobileDevice("MBCA_Regresi_Android").Exists("msgError")
+			
+			intLampu = 0
+			If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("msgError") Then
+				strStatus = "FAILED"
+				strGlbStatusMbca = strStatus
+				If strKeterangan <> "" Then
+					strKeterangan = strKeterangan & ";Error sebelum proses transaksi"
+				Else
+					strKeterangan = "Error sebelum proses transaksi"
+				End If
+				Call CAPTURE_SCREEN(No)
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("btnOK") Then
+					.MobileButton("btnOK").Click()
+				ElseIf _desktop.MobileDevice("MBCA_Regresi_Android").Exists("btnMBCA") Then
+					.MobileButton("btnMBCA").Click()
+				End If
+				.MobileObject("//MobileObject[@resource-id='com.bca:id/tabs_home_btn']").Click()
+				Exit Sub
+			End If
+			
+		' Transaksi VA
+			.MobileObject("tv_va_to_account_label").Click()
+							
+			If DaftarTransfer = "N" Then
+				.MobileTextField("txtInput").SetText(NoVirtual)			
+				If SimpanDaftar = "Y" Then
+					.MobileObject("m_input_dialog_chkBox_input1").Click()
+				End If
+				.MobileButton("//MobileButton[@resource-id='com.bca:id/m_input_dialog_btn_inputOk1']").Click()
+			ElseIf DaftarTransfer = "Y" Then
+				.MobileButton("//MobileButton[@resource-id='com.bca:id/m_input_dialog_btn_list']").Click()
+				
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='" & NoVirtual & " - *']") Then
+					.MobileObject("//MobileObject[@caption='" & NoVirtual & " - *']").Click()
+				Else
+					strStatus = "FAILED"
+					strGlbStatusMbca = strStatus
+					If strKeterangan <> "" Then
+						strKeterangan = strKeterangan & ";Rekening tujuan tidak ada"
+					Else
+						strKeterangan = "Rekening tujuan tidak ada"
+					End If
+					Call CAPTURE_SCREEN(No)
+					.PressBack
+					.MobileObject("//MobileObject[@resource-id='com.bca:id/tabs_home_btn']").Click
+					Exit Sub
+				End If
+				
+			End If
+			
+			Threading.Thread.Sleep(500)
+			If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='145*']") Then
+				strStatus = "FAILED"
+				strGlbStatusMbca = strStatus
+				If strKeterangan <> "" Then
+					strKeterangan = strKeterangan & ";Input data salah"
+				Else
+					strKeterangan = "Input data salah"
+				End If
+				Call CAPTURE_SCREEN(No)
+				.MobileButton("btnMBCA").Click()
+				.PressBack
+				.MobileObject("//MobileObject[@resource-id='com.bca:id/tabs_home_btn']").Click
+				Exit Sub
+			End If
+			
+			.MobileObject("tv_va_from_account_label").Click()
+				
+			If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/m_input_dialog_lstViews_list2']") Then
+				.MobileObject("//MobileObject[@caption='" & DariRekening & "']").Click()
+			End If
+			
+			Call CAPTURE_SCREEN(No)
+						
+			intLampu = 0
+			Do
+				If intProses = 1 Then
+					Exit Sub
+				Else
+					Call PROSES_TRANSAKSI(No, Pin, NoHp, JenisTransfer, DariRekening, JenisVA, Jumlah, DaftarTransfer, NoVirtual, SimpanDaftar, Berita, Expected, Product)
+				End If
+			Loop Until _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']") Or _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/progressBar1']") Or _desktop.MobileDevice("MBCA_Regresi_Android").Exists("msgError")
+			 
+			If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']") Then
+				Do
+					Threading.Thread.Sleep(100)
+				Loop While _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']")
+			ElseIf _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/progressBar1']") Then
+				Do
+					Threading.Thread.Sleep(100)
+				Loop While _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/progressBar1']")
+			End If
+			
+			If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='m-Transfer*']") Then
+				Call NOTIFIKASI_MBCA(JenisVA, NoVirtual, Product, Expected, Berita)
+				If JenisVA = "Online No Bill" Or JenisVA = "Online Bill with Variable Amount" Or JenisVA = "Online Fixed Bill" Or JenisVA = "Offline Bill with Variable Amount" Then
+					Call CAPTURE_SCREEN(No)
+					.Swipe(New Point(761, 1147), New Point(793, 714))
+				End If
+			Else
+				strStatus = "FAILED"
+				strGlbStatusMbca = strStatus
+				If strKeterangan <> "" Then
+					strKeterangan = strKeterangan & ";Proses transaksi gagal"
+				Else
+					strKeterangan = "Proses transaksi gagal"
+				End If
+			End If
+			
+			Call CAPTURE_SCREEN(No)
+				
+			If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("btnOK") Then
+				.MobileButton("btnOK").Click()
+			ElseIf _desktop.MobileDevice("MBCA_Regresi_Android").Exists("btnMBCA") Then
+				.MobileButton("btnMBCA").Click()
+			End If
+			
+			If strStatus = "FAILED" Then
+				.MobileObject("//MobileObject[@resource-id='com.bca:id/tabs_home_btn']").Click
+				Exit Sub
+			End If
+			
+			If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileButton[@resource-id='com.bca:id/buttonSubmit']") Then
+				.MobileButton("//MobileButton[@resource-id='com.bca:id/star5']").Click()
+				Do
+					Threading.Thread.Sleep(500)
+				Loop While _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']")
+				.MobileButton("btnMBCA").Click()
+			End If
+					
+		End With
+		strGlbStatusMbca = "PASSED"
+	End Sub
+	#End Region
+	
+	Private Sub PROSES_TRANSAKSI(No As String, Pin As String, NoHp As String, JenisTransfer As String, DariRekening As String, JenisVA As String, Jumlah As String, _
+									DaftarTransfer As String, NoVirtual As String, SimpanDaftar As String, Berita As String, Expected As String, Product As String)
+			
+		Dim verifTagihan As String
+		Dim arrverifTagihan As Array
+									
+		With _desktop.MobileDevice("MBCA_Regresi_Android")
+														
+				Do
+					If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@content-desc='Green_Indicator']") Then
+						.MobileButton("btnMBCA").Click()
+					Else
+					Do
+						Threading.Thread.Sleep(100)
+					Loop Until _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@content-desc='Green_Indicator']")
+						.MobileButton("btnMBCA").Click()
+					End If
+					Threading.Thread.Sleep(1000)
+					If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='Transaksi dapat*']") Then
+						.MobileButton("btnMBCA").Click()
+					End If
+				Loop Until _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']") Or _desktop.MobileDevice("MBCA_Regresi_Android").Exists("msgError") Or _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/progressBar1']")
+
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']") Then
+					Do
+						Threading.Thread.Sleep(100)
+					Loop While _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='android:id/progress']")
+				ElseIf _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/progressBar1']") Then
+					Do
+						Threading.Thread.Sleep(100)
+					Loop While _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/progressBar1']")
+				End If
+
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='m-Transfer:*']") Then
+					Call KONFIRMASI_MBCA(JenisVA, Expected, NoVirtual, Product, DariRekening)
+				Else
+					Call CAPTURE_SCREEN(No)
+										
+					If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("btnOK") Then
+						.MobileButton("btnOK").Click()
+					ElseIf _desktop.MobileDevice("MBCA_Regresi_Android").Exists("btnMBCA") Then
+						.MobileButton("btnMBCA").Click()
+					End If
+					.MobileObject("//MobileObject[@resource-id='com.bca:id/tabs_home_btn']").Click()
+					intProses = 1
+					Exit Sub
+				End If
+					
+				If intLampu = 0 Then
+					Call CAPTURE_SCREEN(No)
+				End If
+				
+				If strStatus = "FAILED" Then
+					If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("btnMBCA") Then
+						.MobileButton("btnMBCA").Click()
+					End If
+					.MobileObject("//MobileObject[@resource-id='com.bca:id/tabs_home_btn']").Click
+					intProses = 1
+					Exit Sub
+				Else
+					.MobileButton("btnOK").Click()
+				End If
+				
+				If JenisVA = "Offline No Bill" Or JenisVA = "Offline Bill with Variable Amount" Or JenisVA = "Online No Bill" Or JenisVA = "Online Bill with Variable Amount" Then
+					.MobileTextField("txtInput").SetText(Jumlah)
+					
+					If intLampu = 0 Then
+						Call CAPTURE_SCREEN(No)
+					End If
+					
+'					If JenisVA = "Offline Bill with Variable Amount" Or JenisVA = "Online Bill with Variable Amount" Then
+'						verifTagihan = _desktop.MobileDevice("MBCA_Regresi_Android").MobileObject("//MobileObject[@resource-id='com.bca:id/m_input_dialog_lbl_input1']").Text
+'						arrverifTagihan = Split(verifTagihan, ".")
+'						If Trim(arrverifTagihan(1)) <> Jumlah Then
+'							strStatus = "FAILED"
+'							strKeterangan = strKeterangan & ";Jumlah tagihan tidak sesuai"
+'							.MobileButton("btnMBCA").Click()
+'							.MobileObject("//MobileObject[@resource-id='com.bca:id/tabs_home_btn']").Click
+'							intProses = 1
+'							Exit Sub
+'						ElseIf Trim(arrverifTagihan(1)) = Jumlah Then
+'							.MobileButton("btnOK").Click()
+'						End If
+'					Else
+						.MobileButton("btnOK").Click()
+'					End If
+					
+				End If
+				
+				Threading.Thread.Sleep(1000)
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='Transaksi dapat*']") Then
+					Threading.Thread.Sleep(1000)
+					.MobileButton("btnMBCA").Click()
+					intProses = 0
+					Exit Sub
+				End If
+				
+				If JenisVA = "Offline No Bill" Or JenisVA = "Offline Bill with Variable Amount" Or JenisVA = "Offline Fixed Bill" Then
+					If Berita <> "" Then
+						.MobileTextField("txtInput").SetText(Berita)
+					End If
+				
+					If intLampu = 0 Then
+						Call CAPTURE_SCREEN(No)
+					End If
+				
+					.MobileButton("btnOK").Click()
+					
+					Threading.Thread.Sleep(1000)
+				End If
+				
+				Threading.Thread.Sleep(1000)
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='Transaksi dapat*']") Then
+					Threading.Thread.Sleep(1000)
+					.MobileButton("btnMBCA").Click()
+					intProses = 0
+					Exit Sub
+				End If
+				
+				.MobileTextField("input_text").SetText(Pin)			
+				
+'				If intLampu = 0 Then
+'					Call CAPTURE_SCREEN(No)
+'				End If
+				
+				.MobileButton("btnOK").Click()
+				
+				Threading.Thread.Sleep(1000)
+				If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='Transaksi dapat*']") Then
+					Threading.Thread.Sleep(1000)
+					.MobileButton("btnMBCA").Click()
+					intProses = 0
+				End If
+			End With
+
+	End Sub
+	
+'	VERIFIKASI
+	#Region "Verifikasi"
+	
+'	Verifikasi Konfirmasi MBCA
+	Private Sub KONFIRMASI_MBCA(JenisVA As String, Expected As String, NoVirtual As String, Product As String, DariRekening As String)
+		
+		Dim h, konfirText, konfirTrnf, konfirKeRek, konfirNama, konfirProduct, konfirDari, Expected5 As String
+		Dim intKonfir, intKonfir1 As Integer
+		Dim konfirArrText As Array
+		
+		konfirText = ""
+		konfirTrnf = ""
+		konfirKeRek = ""
+		konfirNama = ""
+		konfirProduct = ""
+		konfirDari = ""
+		Expected5 = Left(Expected, 16)
+		
+		Threading.Thread.Sleep(1000)
+		konfirText 		= _desktop.MobileDevice("MBCA_Regresi_Android").MobileObject("msgError").Text
+		konfirArrText 	= Split(konfirText, chr(10))
+		intKonfir		= UBound(konfirArrText) - 1
+		intKonfir1		= UBound(konfirArrText) - 2
+		
+		If JenisVA = "Offline No Bill" Or JenisVA = "Online No Bill" Then
+			konfirTrnf 		= konfirArrText(0)
+			konfirKeRek		= konfirArrText(1)
+			konfirProduct 	= konfirArrText(2)
+			konfirNama		= konfirArrText(3)
+			konfirDari		= konfirArrText(intKonfir)
+				If konfirTrnf <> strGlbTitle Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirDari <> "Dari " & DariRekening Then
+					strStatus = "FAILED"
+					strGlbStatusMbca = strStatus
+					If strKeterangan <> "" Then
+						strKeterangan = strKeterangan & ";Verifikasi layar konfirmasi gagal"
+					Else
+						strKeterangan = "Verifikasi layar konfirmasi gagal"
+					End If
+				End If
+				
+		ElseIf JenisVA = "Offline Fixed Bill" Or JenisVA = "Online Fixed Bill" Then
+			konfirTrnf 		= konfirArrText(0)
+			konfirKeRek		= konfirArrText(1)
+			konfirProduct 	= konfirArrText(2)
+			konfirNama		= konfirArrText(3)
+			'strGlbBill1 	= konfirArrText(4)
+			If JenisVA = "Offline Fixed Bill" Then
+				'strGlbBill2 	= konfirArrText(5)
+				'strGlbTagihan	= konfirArrText(6)
+				'strGlbAdmin		= konfirArrText(7)
+				konfirDari		= konfirArrText(intKonfir)
+				If konfirTrnf <> strGlbTitle Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirDari <> "Dari " & DariRekening Then
+					strStatus = "FAILED"
+					strGlbStatusMbca = strStatus
+					If strKeterangan <> "" Then
+						strKeterangan = strKeterangan & ";Verifikasi layar konfirmasi gagal"
+					Else
+						strKeterangan = "Verifikasi layar konfirmasi gagal"
+					End If
+				End If
+			ElseIf JenisVA = "Online Fixed Bill" Then
+				'strGlbTagihan	= konfirArrText(5)
+				konfirDari		= konfirArrText(intKonfir)
+				If konfirTrnf <> strGlbTitle Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirDari <> "Dari " & DariRekening Then
+					strStatus = "FAILED"
+					strGlbStatusMbca = strStatus
+					If strKeterangan <> "" Then
+						strKeterangan = strKeterangan & ";Verifikasi layar konfirmasi gagal"
+					Else
+						strKeterangan = "Verifikasi layar konfirmasi gagal"
+					End If
+				End If
+			End If
+			
+		ElseIf JenisVA = "Offline Bill with Variable Amount" Or JenisVA = "Online Bill with Variable Amount" Then
+			konfirTrnf 		= konfirArrText(0)
+			konfirKeRek		= konfirArrText(1)
+			konfirProduct 	= konfirArrText(2)
+			konfirNama		= konfirArrText(3)
+			'strGlbBill1 	= konfirArrText(4)
+			'strGlbTagihan	= konfirArrText(5)
+			konfirDari		= konfirArrText(intKonfir)
+			If JenisVA = "Offline Bill with Variable Amount" Then
+				If konfirTrnf <> strGlbTitle Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirDari <> "Dari " & DariRekening Then
+					strStatus = "FAILED"
+					strGlbStatusMbca = strStatus
+					If strKeterangan <> "" Then
+						strKeterangan = strKeterangan & ";Verifikasi layar konfirmasi gagal"
+					Else
+						strKeterangan = "Verifikasi layar konfirmasi gagal"
+					End If
+				End If
+			ElseIf JenisVA = "Online Bill with Variable Amount" Then
+				If konfirTrnf <> strGlbTitle Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirDari <> "Dari " & DariRekening Then
+					strStatus = "FAILED"
+					strGlbStatusMbca = strStatus
+					If strKeterangan <> "" Then
+						strKeterangan = strKeterangan & ";Verifikasi layar konfirmasi gagal"
+					Else
+						strKeterangan = "Verifikasi layar konfirmasi gagal"
+					End If
+				End If
+			End If
+		End If
+
+		h = strStatus
+		Threading.Thread.Sleep(100)
+		
+	End Sub
+	
+'	Verifikasi Notifikasi MBCA
+	Private Sub NOTIFIKASI_MBCA(JenisVA As String, NoVirtual As String, Product As String, Expected As String, Berita As String)
+		
+		Dim l, konfirText, konfirTrnf, konfirKeRek, konfirStatus, konfirNama, konfirJumlah, konfirTagihan, konfirProduct, konfirBill1, konfirBill2, konfirAdmin, konfirBerita, Expected5 As String
+		Dim konfirArrText As Array
+		Dim intKonfir, intKonfir1 As Integer
+		Dim e, r, t, y, u, i, o, p As String
+		
+		konfirText = ""
+		konfirTrnf = ""
+		konfirKeRek = ""
+		konfirStatus = ""
+		konfirNama = ""
+		konfirJumlah = ""
+		konfirTagihan = ""
+		konfirProduct = ""
+		konfirBill1 = ""
+		konfirBill2 = ""
+		konfirAdmin = ""
+		konfirBerita = ""
+		Expected5 = Left(Expected, 16)
+		
+		Threading.Thread.Sleep(1000)
+		konfirText 		= _desktop.MobileDevice("MBCA_Regresi_Android").MobileObject("msgError").Text
+		konfirArrText 	= Split(konfirText, chr(10))
+		intKonfir		= UBound(konfirArrText) - 1
+		intKonfir1		= UBound(konfirArrText) - 2
+
+		If JenisVA = "Offline No Bill" Or JenisVA = "Online No Bill" Then
+			konfirTrnf 		= konfirArrText(0)
+			strGlbStatus	= konfirArrText(1)
+			strGlbTglJam	= konfirArrText(2)
+			konfirKeRek		= konfirArrText(3)
+			konfirProduct 	= konfirArrText(4)
+			konfirNama		= konfirArrText(5)
+			If JenisVA = "Offline No Bill" Then
+				If Berita = "" Then
+					strGlbJumlah	= konfirArrText(intKonfir)
+					If konfirTrnf <> strGlbTitle Or strGlbStatus <> "BERHASIL" Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Then
+						strStatus = "FAILED"
+						strGlbStatusMbca = strStatus
+						If strKeterangan <> "" Then
+							strKeterangan = strKeterangan & ";Verifikasi layar notifikasi gagal"
+						Else
+							strKeterangan = "Verifikasi layar notifikasi gagal"
+						End If
+					End If
+				Else
+					strGlbJumlah	= konfirArrText(intKonfir1)
+					konfirBerita 	= konfirArrText(intKonfir)
+						If konfirTrnf <> strGlbTitle Or strGlbStatus <> "BERHASIL" Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirBerita <> Berita Then
+							strStatus = "FAILED"
+							strGlbStatusMbca = strStatus
+							If strKeterangan <> "" Then
+								strKeterangan = strKeterangan & ";Verifikasi layar notifikasi gagal"
+							Else
+								strKeterangan = "Verifikasi layar notifikasi gagal"
+							End If
+						End If
+				End If
+			ElseIf JenisVA = "Online No Bill" Then
+'				strGlbFreeText1 = konfirArrText(7)
+'				strGlbFreeText2 = konfirArrText(8)
+'				strGlbFreeText3 = konfirArrText(9)
+'				strGlbFreeText4 = konfirArrText(10)
+'				strGlbFreeText5 = konfirArrText(11)
+'				strGlbFreeText6 = konfirArrText(12)
+'				strGlbFreeText7 = konfirArrText(13)
+'				strGlbFreeText8 = konfirArrText(14)
+'				strGlbFreeText9 = konfirArrText(15)
+					If konfirTrnf <> strGlbTitle Or strGlbStatus <> "BERHASIL" Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Then
+						strStatus = "FAILED"
+						strGlbStatusMbca = strStatus
+						If strKeterangan <> "" Then
+							strKeterangan = strKeterangan & ";Verifikasi layar notifikasi gagal"
+						Else
+							strKeterangan = "Verifikasi layar notifikasi gagal"
+						End If
+					End If
+			End If
+		
+		ElseIf JenisVA = "Offline Fixed Bill" Or JenisVA = "Online Fixed Bill" Then
+			konfirTrnf 		= konfirArrText(0)
+			strGlbStatus	= konfirArrText(1)
+			strGlbTglJam	= konfirArrText(2)
+			konfirKeRek		= konfirArrText(3)
+			konfirProduct 	= konfirArrText(4)
+			konfirNama		= konfirArrText(5)
+			'konfirBill1 	= konfirArrText(6)
+			
+			If JenisVA = "Offline Fixed Bill" Then
+				'konfirBill2 	= konfirArrText(7)
+				'konfirTagihan	= konfirArrText(8)
+				'konfirAdmin	= konfirArrText(9)
+				If Berita = "" Then
+					If konfirTrnf <> strGlbTitle Or strGlbStatus <> "BERHASIL" Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Then
+						strStatus = "FAILED"
+						strGlbStatusMbca = strStatus
+						If strKeterangan <> "" Then
+							strKeterangan = strKeterangan & ";Verifikasi layar notifikasi gagal"
+						Else
+							strKeterangan = "Verifikasi layar notifikasi gagal"
+						End If
+					End If
+				Else
+					konfirBerita = konfirArrText(intKonfir)
+						If konfirTrnf <> strGlbTitle Or strGlbStatus <> "BERHASIL" Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or _
+							konfirBerita <> Berita Then
+							strStatus = "FAILED"
+							strGlbStatusMbca = strStatus
+							If strKeterangan <> "" Then
+								strKeterangan = strKeterangan & ";Verifikasi layar notifikasi gagal"
+							Else
+								strKeterangan = "Verifikasi layar notifikasi gagal"
+							End If
+						End If
+				End If
+			ElseIf JenisVA = "Online Fixed Bill" Then
+'				konfirTagihan	= konfirArrText(7)
+'				strGlbFreeText1 = konfirArrText(8)
+'				strGlbFreeText2 = konfirArrText(9)
+'				strGlbFreeText3 = konfirArrText(10)
+'				strGlbFreeText4 = konfirArrText(11)
+'				strGlbFreeText5 = konfirArrText(12)
+'				strGlbFreeText6 = konfirArrText(13)
+'				strGlbFreeText7 = konfirArrText(14)
+'				strGlbFreeText8 = konfirArrText(15)
+'				strGlbFreeText9 = konfirArrText(16)
+					If konfirTrnf <> strGlbTitle Or strGlbStatus <> "BERHASIL" Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Then
+						strStatus = "FAILED"
+						strGlbStatusMbca = strStatus
+						If strKeterangan <> "" Then
+							strKeterangan = strKeterangan & ";Verifikasi layar notifikasi gagal"
+						Else
+							strKeterangan = "Verifikasi layar notifikasi gagal"
+						End If
+					End If
+			End If			
+		ElseIf JenisVA = "Offline Bill with Variable Amount" Or JenisVA = "Online Bill with Variable Amount" Then
+			konfirTrnf 		= konfirArrText(0)
+			strGlbStatus	= konfirArrText(1)
+			strGlbTglJam	= konfirArrText(2)
+			konfirKeRek		= konfirArrText(3)
+			konfirProduct 	= konfirArrText(4)
+			konfirNama		= konfirArrText(5)
+			'konfirBill1 	= konfirArrText(6)
+			'konfirTagihan	= konfirArrText(7)
+			If JenisVA = "Offline Bill with Variable Amount" Then
+				If Berita = "" Then
+					strGlbJumlah	= konfirArrText(intKonfir)
+					If konfirTrnf <> strGlbTitle Or strGlbStatus <> "BERHASIL" Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Then
+						strStatus = "FAILED"
+						strGlbStatusMbca = strStatus
+						If strKeterangan <> "" Then
+							strKeterangan = strKeterangan & ";Verifikasi layar notifikasi gagal"
+						Else
+							strKeterangan = "Verifikasi layar notifikasi gagal"
+						End If
+					End If
+				Else
+					strGlbJumlah	= konfirArrText(intKonfir1)
+					konfirBerita 	= konfirArrText(intKonfir)
+						If konfirTrnf <> strGlbTitle Or strGlbStatus <> "BERHASIL" Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or _
+							konfirBerita <> Berita Then
+							strStatus = "FAILED"
+							strGlbStatusMbca = strStatus
+							If strKeterangan <> "" Then
+								strKeterangan = strKeterangan & ";Verifikasi layar notifikasi gagal"
+							Else
+								strKeterangan = "Verifikasi layar notifikasi gagal"
+							End If
+						End If
+				End If
+			ElseIf JenisVA = "Online Bill with Variable Amount" Then
+'				strGlbFreeText1 = konfirArrText(9)
+'				strGlbFreeText2 = konfirArrText(10)
+'				strGlbFreeText3 = konfirArrText(11)
+'				strGlbFreeText4 = konfirArrText(12)
+'				strGlbFreeText5 = konfirArrText(13)
+'				strGlbFreeText6 = konfirArrText(14)
+'				strGlbFreeText7 = konfirArrText(15)
+'				strGlbFreeText8 = konfirArrText(16)
+'				strGlbFreeText9 = konfirArrText(17)
+					If konfirTrnf <> strGlbTitle Or strGlbStatus <> "BERHASIL" Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Then
+						strStatus = "FAILED"
+						strGlbStatusMbca = strStatus
+						If strKeterangan <> "" Then
+							strKeterangan = strKeterangan & ";Verifikasi layar notifikasi gagal"
+						Else
+							strKeterangan = "Verifikasi layar notifikasi gagal"
+						End If
+					End If
+			End If
+		End If
+		
+		l = strStatus
+		r = strGlbTitle
+		t = strGlbStatus
+		y = strGlbJumlah
+		u = strGlbTglJam
+		i = strGlbAdmin
+		o = strGlbBill1
+		p = strGlbBill2
+		e = strGlbTagihan
+						
+		Threading.Thread.Sleep(100)
+	End Sub
+	
+'	Verifikasi Inbox MBCA
+	Private Sub VERIFIKASI_INBOX(JenisVA As String, NoVirtual As String, Product As String, Expected As String, Berita As String)
+		
+		Dim konfirText, konfirTrnf, konfirTanggal, konfirKeRek, konfirStatus, konfirNama, konfirJumlah, konfirTagihan, konfirProduct, konfirBill1, konfirBill2, konfirAdmin, konfirBerita, d As String
+		Dim konfirFreeText1, konfirFreeText2, konfirFreeText3, konfirFreeText4, konfirFreeText5, konfirFreeText6, konfirFreeText7, konfirFreeText8, konfirFreeText9, Expected5 As String
+		Dim intKonfir, intKonfir1, intKonfir2 As Integer
+		Dim konfirArrText As Array
+		
+		konfirText = ""
+		konfirTrnf = ""
+		konfirTanggal = ""
+		konfirKeRek = ""
+		konfirStatus = ""
+		konfirNama = ""
+		konfirJumlah = ""
+		konfirTagihan = ""
+		konfirProduct = ""
+		konfirBill1 = ""
+		konfirBill2 = ""
+		konfirAdmin = ""
+		konfirBerita = ""
+		konfirFreeText1 = ""
+		konfirFreeText2 = ""
+		konfirFreeText3 = ""
+		konfirFreeText4 = ""
+		konfirFreeText5 = ""
+		konfirFreeText6 = ""
+		konfirFreeText7 = ""
+		konfirFreeText8 = ""
+		konfirFreeText9 = ""
+		Expected5 = Left(Expected, 16)
+		
+		Threading.Thread.Sleep(2000)
+		konfirText 		= _desktop.MobileDevice("MBCA_Regresi_Android").MobileObject("msgError").Text
+		konfirArrText 	= Split(konfirText, chr(10))
+		intKonfir		= UBound(konfirArrText)
+		intKonfir1		= UBound(konfirArrText) - 1
+		intKonfir2		= UBound(konfirArrText) - 2
+
+		If JenisVA = "Offline No Bill" Or JenisVA = "Online No Bill" Then
+			konfirTrnf 		= konfirArrText(0)
+			konfirStatus	= konfirArrText(1)
+			konfirTanggal	= konfirArrText(2)
+			konfirKeRek		= konfirArrText(3)
+			konfirProduct 	= konfirArrText(4)
+			konfirNama		= konfirArrText(5)
+			If JenisVA = "Offline No Bill" Then
+				If Berita = "" Then
+					konfirJumlah	= konfirArrText(intKonfir1)
+					strGlbRef 		= Replace(konfirArrText(intKonfir), "Ref ", "")
+						If konfirTrnf <> strGlbTitle Or konfirStatus <> strGlbStatus Or konfirTanggal <> strGlbTglJam Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirJumlah <> strGlbJumlah Then
+							strStatus = "FAILED"
+							strGlbStatusMbca= strStatus
+							If strKeterangan <> "" Then
+								strKeterangan = strKeterangan & ";Verifikasi inbox gagal"
+							Else
+								strKeterangan = "Verifikasi inbox gagal"
+							End If
+						End If
+				Else
+					konfirJumlah	= konfirArrText(intKonfir2)
+					konfirBerita 	= konfirArrText(intKonfir1)
+					strGlbRef 		= Replace(konfirArrText(intKonfir), "Ref ", "")
+						If konfirTrnf <> strGlbTitle Or konfirStatus <> strGlbStatus Or konfirTanggal <> strGlbTglJam Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirJumlah <> strGlbJumlah Or _
+							konfirBerita <> Berita Then
+							strStatus = "FAILED"
+							strGlbStatusMbca = strStatus
+							If strKeterangan <> "" Then
+								strKeterangan = strKeterangan & ";Verifikasi inbox gagal"
+							Else
+								strKeterangan = "Verifikasi inbox gagal"
+							End If
+						End If
+				End If
+			ElseIf JenisVA = "Online No Bill" Then
+'				konfirFreeText1 = konfirArrText(7)
+'				konfirFreeText2 = konfirArrText(8)
+'				konfirFreeText3 = konfirArrText(9)
+'				konfirFreeText4 = konfirArrText(10)
+'				konfirFreeText5 = konfirArrText(11)
+'				konfirFreeText6 = konfirArrText(12)
+'				konfirFreeText7 = konfirArrText(13)
+'				konfirFreeText8 = konfirArrText(14)
+'				konfirFreeText9 = konfirArrText(15)
+				strGlbRef 		= Replace(konfirArrText(intKonfir), "Ref ", "")
+'					If konfirTrnf <> strGlbTitle Or konfirStatus <> strGlbStatus Or konfirTanggal <> strGlbTglJam Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirJumlah <> strGlbJumlah Or _
+'						konfirFreeText1 <> strGlbFreeText1 Or konfirFreeText2 <> strGlbFreeText2 Or konfirFreeText3 <> strGlbFreeText3 Or konfirFreeText4 <> strGlbFreeText4 Or konfirFreeText5 <> strGlbFreeText5 Or _
+'						konfirFreeText6 <> strGlbFreeText6 Or konfirFreeText7 <> strGlbFreeText7 Or konfirFreeText8 <> strGlbFreeText8 Or konfirFreeText9 <> strGlbFreeText9 Then
+'						strStatus = "FAILED"
+						'strGlbStatusMbca = strStatus
+'						strKeterangan = strKeterangan & ";Verifikasi inbox gagal"
+'					End If
+			End If
+				
+		ElseIf JenisVA = "Offline Fixed Bill" Or JenisVA = "Online Fixed Bill" Then
+			konfirTrnf 		= konfirArrText(0)
+			konfirStatus	= konfirArrText(1)
+			konfirTanggal	= konfirArrText(2)
+			konfirKeRek		= konfirArrText(3)
+			konfirProduct 	= konfirArrText(4)
+			konfirNama		= konfirArrText(5)
+			'konfirBill1 	= konfirArrText(6)
+			If JenisVA = "Offline Fixed Bill" Then
+				'konfirBill2 	= konfirArrText(7)
+				'konfirTagihan	= konfirArrText(8)
+				'konfirAdmin		= konfirArrText(9)
+				If Berita = "" Then
+					strGlbRef = Replace(konfirArrText(intKonfir), "Ref ", "")
+						If konfirTrnf <> strGlbTitle Or konfirStatus <> strGlbStatus Or konfirTanggal <> strGlbTglJam Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Then
+							strStatus = "FAILED"
+							strGlbStatusMbca = strStatus
+							If strKeterangan <> "" Then
+								strKeterangan = strKeterangan & ";Verifikasi inbox gagal"
+							Else
+								strKeterangan = "Verifikasi inbox gagal"
+							End If
+						End If
+				Else
+					konfirBerita = konfirArrText(intKonfir1)
+					strGlbRef 	 = Replace(konfirArrText(intKonfir), "Ref ", "")
+						If konfirTrnf <> strGlbTitle Or konfirStatus <> strGlbStatus Or konfirTanggal <> strGlbTglJam Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or _
+							konfirBerita <> Berita Then
+							strStatus = "FAILED"
+							strGlbStatusMbca = strStatus
+							If strKeterangan <> "" Then
+								strKeterangan = strKeterangan & ";Verifikasi inbox gagal"
+							Else
+								strKeterangan = "Verifikasi inbox gagal"
+							End If
+						End If
+				End If
+			ElseIf JenisVA = "Online Fixed Bill" Then
+'				konfirTagihan	= konfirArrText(7)
+'				konfirFreeText1 = konfirArrText(8)
+'				konfirFreeText2 = konfirArrText(9)
+'				konfirFreeText3 = konfirArrText(10)
+'				konfirFreeText4 = konfirArrText(11)
+'				konfirFreeText5 = konfirArrText(12)
+'				konfirFreeText6 = konfirArrText(13)
+'				konfirFreeText7 = konfirArrText(14)
+'				konfirFreeText8 = konfirArrText(15)
+'				konfirFreeText9 = konfirArrText(16)
+				strGlbRef 		= Replace(konfirArrText(intKonfir), "Ref ", "")
+'					If konfirTrnf <> strGlbTitle Or konfirStatus <> strGlbStatus Or konfirTanggal <> strGlbTglJam Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirBill1 <> strGlbBill1 Or _
+'						konfirTagihan <> strGlbTagihan Or konfirFreeText1 <> strGlbFreeText1 Or konfirFreeText2 <> strGlbFreeText2 Or konfirFreeText3 <> strGlbFreeText3 Or konfirFreeText4 <> strGlbFreeText4 Or _
+'						konfirFreeText5 <> strGlbFreeText5 Or konfirFreeText6 <> strGlbFreeText6 Or konfirFreeText7 <> strGlbFreeText7 Or konfirFreeText8 <> strGlbFreeText8 Or konfirFreeText9 <> strGlbFreeText9 Then
+'						strStatus = "FAILED"
+'						strKeterangan = strKeterangan & ";Verifikasi inbox gagal"
+'					End If
+			End If
+
+		ElseIf JenisVA = "Offline Bill with Variable Amount" Or JenisVA = "Online Bill with Variable Amount" Then
+			konfirTrnf 		= konfirArrText(0)
+			konfirStatus	= konfirArrText(1)
+			konfirTanggal	= konfirArrText(2)
+			konfirKeRek		= konfirArrText(3)
+			konfirProduct 	= konfirArrText(4)
+			konfirNama		= konfirArrText(5)
+			'konfirBill1 	= konfirArrText(6)
+			'konfirTagihan	= konfirArrText(7)
+			
+			If JenisVA = "Offline Bill with Variable Amount" Then
+				If Berita = "" Then
+					konfirJumlah	= konfirArrText(intKonfir1)
+					strGlbRef 		= Replace(konfirArrText(intKonfir), "Ref ", "")
+						If konfirTrnf <> strGlbTitle Or konfirStatus <> strGlbStatus Or konfirTanggal <> strGlbTglJam Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or _
+							konfirJumlah <> strGlbJumlah Then
+							strStatus = "FAILED"
+							strGlbStatusMbca = strStatus
+							If strKeterangan <> "" Then
+								strKeterangan = strKeterangan & ";Verifikasi inbox gagal"
+							Else
+								strKeterangan = "Verifikasi inbox gagal"
+							End If
+						End If
+				Else
+					konfirJumlah	= konfirArrText(intKonfir2)
+					konfirBerita 	= konfirArrText(intKonfir1)
+					strGlbRef 		= Replace(konfirArrText(intKonfir), "Ref ", "")
+						If konfirTrnf <> strGlbTitle Or konfirStatus <> strGlbStatus Or konfirTanggal <> strGlbTglJam Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or _
+							konfirJumlah <> strGlbJumlah Or konfirBerita <> Berita Then
+							strStatus = "FAILED"
+							strGlbStatusMbca = strStatus
+							If strKeterangan <> "" Then
+								strKeterangan = strKeterangan & ";Verifikasi inbox gagal"
+							Else
+								strKeterangan = "Verifikasi inbox gagal"
+							End If
+						End If
+				End If
+			ElseIf JenisVA = "Online Bill with Variable Amount" Then
+'				konfirFreeText1 = konfirArrText(9)
+'				konfirFreeText2 = konfirArrText(10)
+'				konfirFreeText3 = konfirArrText(11)
+'				konfirFreeText4 = konfirArrText(12)
+'				konfirFreeText5 = konfirArrText(13)
+'				konfirFreeText6 = konfirArrText(14)
+'				konfirFreeText7 = konfirArrText(15)
+'				konfirFreeText8 = konfirArrText(16)
+'				konfirFreeText9 = konfirArrText(17)
+				strGlbRef 		= Replace(konfirArrText(intKonfir), "Ref ", "")
+'					If konfirTrnf <> strGlbTitle Or konfirStatus <> strGlbStatus Or konfirTanggal <> strGlbTglJam Or konfirKeRek <> NoVirtual Or konfirProduct <> Product Or konfirNama <> Expected5 Or konfirBill1 <> strGlbBill1 Or _
+'						konfirTagihan <> strGlbTagihan Or konfirJumlah <> strGlbJumlah Or konfirFreeText1 <> strGlbFreeText1 Or konfirFreeText2 <> strGlbFreeText2 Or konfirFreeText3 <> strGlbFreeText3 Or konfirFreeText4 <> strGlbFreeText4 Or _
+'						konfirFreeText5 <> strGlbFreeText5 Or konfirFreeText6 <> strGlbFreeText6 Or konfirFreeText7 <> strGlbFreeText7 Or konfirFreeText8 <> strGlbFreeText8 Or konfirFreeText9 <> strGlbFreeText9 Then
+'						strStatus = "FAILED"
+'						strKeterangan = strKeterangan & ";Verifikasi inbox gagal"
+'					End If
+			End If
+		End If
+		
+		d = strGlbRef
+					
+		Threading.Thread.Sleep(100)
+	End Sub
+	
+	Private Sub KONFIRMASI_GAGAL(Expected)
+		
+		Dim textError As String
+		
+		textError = _desktop.MobileDevice("MBCA_Regresi_Android").MobileObject("msgError").Text
+		
+		If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='145*']") Or _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='Nomor*']") Or _
+			_desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='Kode*']") Or _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='No. Virtual Account*']") Or _
+			_desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@caption='No Rekening*']") Then
+			strStatus = "FAILED"
+			strGlbStatusMbca = strStatus
+			If strKeterangan <> "" Then
+				strKeterangan = strKeterangan & ";Input data salah"
+			Else
+				strKeterangan = "Input data salah"
+			End If
+'			If Expected <> "" Then
+'				If textError <> Expected Then
+'					strKeterangan = strKeterangan & ", " & "Text error salah/berbeda dengan Expected Value"
+'				End If
+'			End If
+		Else
+			strStatus = "FAILED"
+			strGlbStatusMbca = strStatus
+			If strKeterangan <> "" Then
+				strKeterangan = strKeterangan & ";Proses transaksi gagal"
+			Else
+				strKeterangan = "Proses transaksi gagal"
+			End If
+		End If
+		
+	End Sub
+
+'	FUNCTION
+	#Region "Function"
+	
+	Private Sub CEK_LAMPU(No As String, KodeAkses As String)
+		
+		With _desktop.MobileDevice("MBCA_Regresi_Android")
+			If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@content-desc='Blue_Indicator']") Or _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@content-desc='Red_Indicator']") Then
+				Do
+					Threading.Thread.Sleep(1000)
+					intTimeout = intTimeout + 1
+				Loop Until _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@content-desc='Green_Indicator']") Or intTimeout = 15		
+				
+				If intTimeout = 15 Then
+					.PressBack
+					Call LOGOUT_MBCA()
+					intTimeout = 0
+					
+					Call LOGIN_MBCA(No, KodeAkses)
+					
+					Threading.Thread.Sleep(500)
+					.MobileButton("btnTransfer").Click()
+				Else
+					intTimeout = 0
+					Exit Sub
+				End If
+			Else
+				Exit Sub
+			End If
+		End With
+	End Sub
+	
+	Private Sub LOGIN_MBCA(No As String, KodeAkses As String)		
+	
+		With _desktop.MobileDevice("MBCA_Regresi_Android")
+			.MobileButton("btnMBCA").Click()
+			Threading.Thread.Sleep(1000)
+'			.MobileTextField("txtKodeAkses").Click()
+			If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("txtKodeAkses") = 0 Then
+'				Do
+'					.MobileButton("btnMBCA").Click()
+'					.MobileButton("btnMBCA").Click()
+					.PressBack()
+'				Loop Until _desktop.MobileDevice("MBCA_Regresi_Android").Exists("txtKodeAkses")
+			End If
+			.MobileTextField("txtKodeAkses").SetText(KodeAkses)
+			.MobileButton("btnOK").Click()
+			
+			Do
+				Threading.Thread.Sleep(1000)
+			Loop Until _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileButton[@className='android.widget.Button'][4]")
+			
+		End With
+	End Sub
+	
+	Private Sub CAPTURE_SCREEN (No As Integer)
+		Threading.Thread.Sleep(1000)
+		intGlbNumImage = intGlbNumImage + 1
+		strGlbFileName = "Capture_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+		_desktop.MobileDevice("MBCA_Regresi_Android").CaptureBitmap(strGlbCaptureFolder & strGlbFileName)
+	End Sub
+
+	Private Sub LOGOUT_MBCA()
+		
+		With _desktop.MobileDevice("MBCA_Regresi_Android")
+			'If _desktop.MobileDevice("MBCA_Regresi_Android").Exists("//MobileObject[@resource-id='com.bca:id/button_title_right_logout']") Then
+				'.MobileObject("//MobileObject[@resource-id='com.bca:id/button_title_right_logout']").Click()
+				Threading.Thread.Sleep(1000)
+				.PressBack
+				.MobileButton("btnOK").Click()
+			'End If
+		End With
+		
+	End Sub
+	#End Region
+		
+End Module
