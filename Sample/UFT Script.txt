@@ -1,0 +1,324 @@
+Dim strGlbCaptureFolder, strGlbFlag, intGlbNumImage, intFlag, strStatusTxn, strKeteranganTxn, strStatusVeri, strKeteranganVeri, strKeteranganVeri1
+
+Call MAIN
+
+Private Sub MAIN
+
+	intTotalData = DataTable.GetSheet("TRANSFER_REKENING_BCA").GetRowCount
+		
+	If trim(DataTable.Value("START_DATA","DATA")) = "" Then
+		intLoopingStart = 1
+	Else
+		intLoopingStart = Trim(DataTable.Value("START_DATA","DATA"))
+	End If
+	
+	If trim(DataTable.Value("END_DATA","DATA")) = "" Then
+		intLoopingEnd = intTotalData
+	Else
+		intLoopingEnd = Trim(DataTable.Value("END_DATA","DATA"))
+	End If
+	
+	'Import Sql
+	strScriptID = "KBIW-201705-00013"
+	strDatatableName = Environment.Value("NamaExcel")
+	'strExecutionID = InsertAuditHeader(strScriptID,strDatatableName,intTotalData,intLoopingStart,intLoopingEnd)
+	'End Import
+	
+	tanggal = Year(Now) & Right("0" & Month(Now), 2) & Right("0" & Day(Now), 2) & " " & Right("0" & Hour(Now), 2) & "." & Right("0" & Minute(Now), 2)
+	strGlbCaptureFolder = Environment("CaptureFolder")' & "\" & tanggal
+	strPathFile = "C:\DataTable"
+	strFileExelWp = "\REGRESI.xlsx"
+	
+'	for loop
+	For localLoop = 1 To DataTable.GetSheet("TRANSFER_REKENING_BCA").GetRowCount Step 1
+		
+		'intSequence =  InsertAuditDetail(strExecutionID, localLoop)
+		
+		intNumImage = 0
+		strStatusTxn = ""
+		strKeteranganTxn = ""
+		strStatusVeri = ""
+		strKeteranganVeri = ""
+		strKeteranganVeri1 = ""
+		strGlbFlag = True
+		
+		DataTable.GetSheet("TRANSFER_REKENING_BCA").SetCurrentRow localLoop
+		strNo 					= DataTable.Value("NO", "TRANSFER_REKENING_BCA")
+		strLanguage 			= DataTable.Value("BAHASA", "TRANSFER_REKENING_BCA") 
+		strTransferType 		= DataTable.Value("TRANSFER_TYPE", "TRANSFER_REKENING_BCA") 
+		strDariRek 				= Trim(DataTable.Value("DARI_REKENING", "TRANSFER_REKENING_BCA"))
+		strPilihRekeningTujuan 	= DataTable.Value("PILIH_REKENING_TUJUAN", "TRANSFER_REKENING_BCA") 
+		strRekeningTujuan 		= Trim(DataTable.Value("REKENING_TUJUAN", "TRANSFER_REKENING_BCA"))
+		strMataUang 			= Trim(DataTable.Value("MATA_UANG", "TRANSFER_REKENING_BCA"))
+		strJumlah 				= Trim(DataTable.Value("JUMLAH", "TRANSFER_REKENING_BCA"))
+		strBerita1 				= Trim(DataTable.Value("BERITA_1", "TRANSFER_REKENING_BCA"))
+		strBerita2 				= Trim(DataTable.Value("BERITA_2", "TRANSFER_REKENING_BCA"))				
+		strJenisTransfer 		= Trim(DataTable.Value("JENIS_TRANSFER", "TRANSFER_REKENING_BCA"))
+		strTransferPadaTanggal 	= Trim(DataTable.Value("TRANFER_PADA_TANGGAL", "TRANSFER_REKENING_BCA"))
+		strSetiap 				= Trim(DataTable.Value("SETIAP", "TRANSFER_REKENING_BCA"))
+		strSetiapHari 			= Left(Trim(DataTable.Value("SETIAP_HARI", "TRANSFER_REKENING_BCA")),1)
+		strSetiapTanggal 		= Trim(DataTable.Value("SETIAP_TANGGAL", "TRANSFER_REKENING_BCA"))
+		strTanggalBerakhir 		= Trim(DataTable.Value("TANGGAL_BERAKHIR", "TRANSFER_REKENING_BCA"))
+
+		strApply1 				= Trim(DataTable.Value("APPLY_1", "LOGIN"))
+		strApply2 				= Trim(DataTable.Value("APPLY_2", "LOGIN"))
+		
+		DataTable.GetSheet("SKENARIO").SetCurrentRow localloop
+		
+		If strTransferType = "Transfer ke Rekening BCA" Then
+
+			Call TRANSFER_REKENING_BCA(strNo, strLanguage, strTransferType, strDariRek, strPilihRekeningTujuan, strRekeningTujuan, strMataUang, strJumlah, strBerita1, strBerita2, _
+									strJenisTransfer, strTransferPadaTanggal, strSetiap, strSetiapHari, strSetiapTanggal, strTanggalBerakhir, strApply1, strApply2)	
+			
+		End If
+	
+	Next
+	'Loggut KBI
+	Browser("brwKbiwTransferBca").Page("pgsKbiwTransferBca").Frame("frmMenuHeader").Link("lnkLogout").Click
+	
+End Sub
+
+
+Private Sub TRANSFER_REKENING_BCA(No, Language, TransferType, DariRek, PilihRekeningTujuan, RekeningTujuan, MataUang, Jumlah, Berita1, Berita2, _
+								  JenisTransfer, TransferPadaTanggal, Setiap, SetiapHari, SetiapTanggal, TanggalBerakhir, Apply1, Apply2)
+	
+	Set objHome = Browser("brwKbiwTransferBca").Page("pgsKbiwTransferBca")
+	
+	If Language = "Bahasa Indonesia" Then
+		lnkTransferDana = "lnkTransferDana"
+		lnkTransferRekBCA = "lnkTransferRekBCA"
+		btnLanjutkan = "btnLanjutkan"
+		btnKirim = "btnKirim"
+		strMessageErr = "TRANSAKSI ANDA GAGAL"
+		btnSimpan = "btnSimpan"
+		lnkKembaliMenuUtama = "lnkKembalikeMenuUtama"
+		btnSimpan = "btnSimpan"
+		btnCetak = "btnCetak"
+	ElseIf Language = "Bahasa English" Then
+		lnkTransferDana = "lnkFundTransfer"
+		lnkTransferRekBCA =	"lnkTransferBCAAccount"
+		btnLanjutkan = "btnContinue"
+		btnKirim = "btnSubmit"
+		strMessageErr = "TRANSACTION FAILED"
+		btnSimpan = "btnSave"
+		lnkKembaliMenuUtama = "lnkBacktoMainMenu"
+		btnSimpan = "btnSave"
+		btnCetak = "btnPrint"
+	End If
+	
+	With objHome
+		.Frame("frmMenu").Link(lnkTransferDana).Click
+		.Sync
+		.Frame("frmSubMenu").Link(lnkTransferRekBCA).Click
+		.Sync
+	End With
+	
+	'Pilih List dari Rekening
+	objHome.Frame("frmTransferBca").WebList("lstDariRek").Select DariRek
+	
+	'Input Rek tujuan
+	objHome.Frame("frmTransferBca").WebList("lstRekeningSendiri").Select RekeningTujuan
+		
+	With objHome
+		.Frame("frmTransferBca").WebList("lstMataUang").Select MataUang
+		.Frame("frmTransferBca").WebEdit("txtJumlah").Set Jumlah
+		.Frame("frmTransferBca").WebEdit("txtBerita1").Set Berita1
+		.Frame("frmTransferBca").WebEdit("txtBerita2").Set Berita2
+		.Frame("frmTransferBca").WebEdit("txtApply2").Set Apply2
+	End With
+	
+
+	Wait(1)
+	intGlbNumImage = intGlbNumImage+1
+	FileName = "[Script-Id]_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+	Call CAPTURE_SCREEN(objHome, strGlbCaptureFolder, FileName)
+	
+
+	If JenisTransfer = "Transfer Sekarang" Then
+		objHome.Frame("frmTransferBca").WebRadioGroup("rdoJenisTrf").Select "0"
+	ElseIf JenisTransfer = "Transfer Pada Tanggal" Then
+		With objHome
+			.Frame("frmTransferBca").WebList("lstTrfPdTglDay").Select Left(TransferPadaTanggal,2)
+			.Frame("frmTransferBca").WebList("lstTrfPdTglMonth").Select Mid(TransferPadaTanggal, 3, 2)
+			.Frame("frmTransferBca").WebList("lstTrfPdTglYear").Select Right(TransferPadaTanggal,4)	
+		End With
+	ElseIf JenisTransfer = "Transfer Berkala - Setiap" Then
+		With objHome
+			.Frame("frmTransferBca").WebList("lstSetiap").Select Setiap
+			.Frame("frmTransferBca").WebList("lstTglBerakhirDay").Select Left(TanggalBerakhir,2)
+			.Frame("frmTransferBca").WebList("lstTglBerakhirMonth").Select Mid(TanggalBerakhir, 3, 2)
+			.Frame("frmTransferBca").WebList("vlstTglBerakhirYear").Select Right(TanggalBerakhir,4)
+		End With
+	ElseIf JenisTransfer = "Transfer Berkala - Setiap Hari" Then
+		With objHome
+			.Frame("frmTransferBca").WebList("lstSetiapHari").Select "#" & SetiapHari
+			.Frame("frmTransferBca").WebList("lstTglBerakhirDay").Select Left(TanggalBerakhir,2)
+			.Frame("frmTransferBca").WebList("lstTglBerakhirMonth").Select Mid(TanggalBerakhir, 3, 2)
+			.Frame("frmTransferBca").WebList("vlstTglBerakhirYear").Select Right(TanggalBerakhir,4)
+		End With
+	ElseIf JenisTransfer = "Transfer Berkala - Setiap Tanggal" Then
+		With objHome
+			.Frame("frmTransferBca").WebList("lstSetiapTanggal").Select SetiapTanggal
+			.Frame("frmTransferBca").WebList("lstTglBerakhirDay").Select Left(TanggalBerakhir,2)
+			.Frame("frmTransferBca").WebList("lstTglBerakhirMonth").Select Mid(TanggalBerakhir, 3, 2)
+			.Frame("frmTransferBca").WebList("vlstTglBerakhirYear").Select Right(TanggalBerakhir,4)
+		End With
+
+	End If
+	
+	Wait(1)
+	intGlbNumImage = intGlbNumImage+1
+	FileName = "[Script-Id]_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+	Call CAPTURE_SCREEN(objHome, strGlbCaptureFolder, FileName)
+	
+	'Btn Lanjut
+	With objHome
+		.Frame("frmTransferButton").WebButton(btnLanjutkan).Click
+		.Sync
+	End With
+	
+	If  Browser("brwKbiwTransferBca").Dialog("dlgMessage").Exist(1) Then
+		Wait(1)
+		strStatusTxn = "FAILED"
+		strKeteranganTxn = "Input data gagal"
+		
+		intGlbNumImage = intGlbNumImage+1
+		FileName = "[Script-Id]_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+		Call CAPTURE_SCREEN(Desktop, strGlbCaptureFolder, FileName)
+		Browser("brwKbiwTransferBca").Dialog("dlgMessage").WinButton("btnOk").Click
+		With objHome
+			.Frame("frmSubMenu").Link(lnkKembaliMenuUtama).Click
+			.Sync
+		End With
+		strGlbFlag = False
+		Exit Sub
+	End If
+	
+	Do
+		Wait(1)
+	Loop While objHome.Frame("frmTransferButton").WebButton(btnLanjutkan).Exist(1)
+
+	Set ChkErr = Description.Create
+        ChkErr("Class Name").value = "WebElement"
+        ChkErr("html tag").value = "B"
+        ChkErr("innertext").value = strMessageErr
+	
+    If objHome.Frame("FrmKonfirmasi").WebElement(ChkErr).Exist(1) Then
+      	strStatusTxn = "FAILED"
+		strKeteranganTxn = "Transaksi gagal"
+		intGlbNumImage = intGlbNumImage+1
+		FileName = "[Script-Id]_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+		Call CAPTURE_SCREEN(objHome, strGlbCaptureFolder, FileName)
+		
+		With objHome
+			.Frame("frmSubMenu").Link(lnkKembaliMenuUtama).Click
+			.Sync
+		End With
+		strGlbFlag = False
+		Exit Sub 
+    End If
+    
+    If Browser("brwKbiwTransferBca").Page("klikBCA Individual").Frame("atm").WebList("value(vreason)").Exist(1) Then
+    	Browser("brwKbiwTransferBca").Page("klikBCA Individual").Frame("atm").WebList("value(vreason)").Select "#1"
+    End If
+    
+	If Browser("brwKbiwTransferBca").Page("klikBCA Individual").Frame("atm").WebCheckBox("value(checkedClause)").Exist(1) Then
+    	Browser("brwKbiwTransferBca").Page("klikBCA Individual").Frame("atm").WebCheckBox("value(checkedClause)").Set "ON"
+    End If
+   	
+
+	objHome.Frame("FrmKonfirmasi").WebEdit("txtApply1").Set Apply1
+	
+	intGlbNumImage = intGlbNumImage+1
+	FileName = "[Script-Id]_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+	Call CAPTURE_SCREEN(objHome, strGlbCaptureFolder, FileName)
+	
+	
+	With objHome 
+		.Frame("FrmKonfirmasi").WebButton(btnKirim).Click
+		.Sync
+	End With
+	
+	Set DescWait = Description.Create
+        DescWait("Class Name").value = "WebElement"
+        DescWait("html tag").value = "B"
+        DescWait("height").value = "48"
+        
+	Do
+		Wait(1)
+	Loop While objHome.Frame("FrmKonfirmasi").WebElement(DescWait).Exist(1)
+	
+	Set Chk = Description.Create
+        Chk("Class Name").value = "WebElement"
+        Chk("html tag").value = "B"
+        Chk("innertext").value = strMessageErr
+        
+    If objHome.Frame("FrmKonfirmasi").WebElement(Chk).Exist(3) Then
+      	strStatusTxn = "FAILED"
+		strKeteranganTxn = "Gagal melakukan pembayaran"
+		
+		intGlbNumImage = intGlbNumImage+1
+		FileName = "[Script-Id]_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+		Call CAPTURE_SCREEN(objHome, strGlbCaptureFolder, FileName)
+		
+		With objHome
+			.Frame("frmSubMenu").Link(lnkKembaliMenuUtama).Click
+			.Sync
+		End With
+		strGlbFlag = False
+		Exit Sub 
+    End If
+    
+    Set Chc = Description.Create
+        Chc("Class Name").value = "WebElement"
+        Chc("height").value = "16"
+        Chc("html tag").value = "B"
+        Chc("innertext").value = "MAAF SISTEM SEDANG DALAM GANGGUAN"
+    
+    If objHome.Frame("FrmKonfirmasi").WebElement(Chc).Exist(3) Then
+      	strStatusTxn = "FAILED"
+		strKeteranganTxn = "Sistem mengalami gangguan"
+		
+		intGlbNumImage = intGlbNumImage+1
+		FileName = "[Script-Id]_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+		Call CAPTURE_SCREEN(objHome, strGlbCaptureFolder, FileName)
+		
+		With objHome
+			.Frame("frmSubMenu").Link(lnkKembaliMenuUtama).Click
+			.Sync
+		End With
+		strGlbFlag = False
+		Exit Sub 
+    End If
+   
+	intGlbNumImage = intGlbNumImage+1
+	FileName = "[Script-Id]_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+	Call CAPTURE_SCREEN(objHome, strGlbCaptureFolder, FileName)
+    	
+	'Click button Simpan
+	With objHome 
+		.Frame("FrmKonfirmasi").WebButton(btnSimpan).Click
+		.Sync
+	End With
+	
+	Do
+		Wait(1)
+	Loop Until Browser("brwPopUp").Dialog("Save Webpage").WinButton("Cancel").Exist(1)
+	
+	Browser("brwPopUp").Dialog("Save Webpage").WinButton("Cancel").Click
+	
+	Wait(1)
+	intGlbNumImage = intGlbNumImage+1
+	FileName = "[Script-Id]_" & No & "_" & Right("000" & intGlbNumImage,3) & ".png"
+	Call CAPTURE_SCREEN(Desktop, strGlbCaptureFolder, FileName)
+
+	Browser("brwPopUp").Close
+	strStatusTxn = "PASSED"
+	strKeteranganTxn = "Proses pembayaran berhasil"
+	
+	With objHome
+		.Frame("frmSubMenu").Link(lnkKembaliMenuUtama).Click
+		.Sync
+	End With
+
+End Sub
